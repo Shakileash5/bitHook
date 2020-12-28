@@ -10,7 +10,9 @@
         var targetContainer = document.getElementById("target_div");
         var eventSource = new EventSource("/stream");
         eventSource.onmessage = function(e) {
-            targetContainer.innerHTML = e.data;
+            //targetContainer.innerHTML = e.data;
+            var parsed = JSON.parse(e.data);
+            console.log(parsed,"ugiy");
         };
     </script>
 </html>
