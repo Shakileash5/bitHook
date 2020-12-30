@@ -5,7 +5,7 @@ from flask_cors import CORS
 import time
 
 key = "9924d3911cf21a14cac79595f1a1b33e"
-url = "https://api.nomics.com/v1/currencies/ticker"#?key="+key+"&interval=1h,1d&convert=INR&per-page=100&page=1"
+url = "https://api.nomics.com/v1/currencies/ticker" #?key="+key+"&interval=1h,1d&convert=INR&per-page=100&page=1"
 params = {
     "key":key,
     "interval":"1h,1d",
@@ -14,7 +14,6 @@ params = {
     "page" : 1,
 }
 res = requests.get(url,params)
-#print(json.loads(res.text))
 cryptoCoins = []
 
 
@@ -41,13 +40,14 @@ def setHook(data):
                params["ids"] += "," + coin["id"]
     print(params,cryptoCoins)         
     response = requests.get(url,params)
-    print("\n\n response\n",response.json())   
+    print("\n\n response\n",response.json()) 
 
 
 def get_message():
     '''this could be any function that blocks until data is ready'''
-    time.sleep(20.0)
+    time.sleep(5.0)
     s = time.ctime(time.time())
+    res = requests.get(url,params)
     js = res.json()
     return json.dumps(js)
 
