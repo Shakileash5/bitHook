@@ -23,6 +23,7 @@ CORS(app)
 
 def setHook(data):
     flag = 0
+    print(data,cryptoCoins)
     for i in range(len(cryptoCoins)):
         if cryptoCoins[i]["id"] == data["coinId"]:
             flag = 1
@@ -39,8 +40,8 @@ def setHook(data):
            else:
                params["ids"] += "," + coin["id"]
     print(params,cryptoCoins)         
-    response = requests.get(url,params)
-    print("\n\n response\n",response.json()) 
+    #response = requests.get(url,params)
+    #print("\n\n response\n",response.json()) 
 
 
 def get_message():
