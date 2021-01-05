@@ -3,6 +3,7 @@ import json
 from flask import Flask,render_template,Response,jsonify,request
 from flask_cors import CORS
 import time
+import asyncio
 from datetime import datetime
 import pyrebase
 
@@ -32,10 +33,38 @@ cryptoCoins = []
 app = Flask(__name__)
 CORS(app)
 
+tempPercent = 0
+coinDirection = 0
 
 def saveInFirebase(id,data):
     db.child("CoinData").child(str(id)).set(data)
     return
+
+async def tracker():
+    while True:
+        
+        print("tracker running")
+        if params["ids"] == "":
+            print("tracker stopped")
+            break
+        
+        time.sleep(5)
+        res = requests.get(url,params).json()
+        global coinDirection
+        for i in res:
+            print(i["price"]," id ::",i["id"],params["ids"])
+            for coin in cryptoCoins:
+                if coin["id"] == i["id"]:
+                    if float(coin["maxPrice"]) < float(i["price"]):
+                        coin["maxPrice"] = i["price"]
+                    tempPercent = (float(i["price"])*100)/float(coin["maxPrice"])
+                    if tempPercent >= 100:
+                        tempPercent -= 100
+                        coinDirection = 1
+                    else :
+                        tempPercent = 100 - tempPercent
+
+                    print(tempPercent,"percent ",coinDirection,"\n")
 
 def setHook(data):
     flag = 0
@@ -52,15 +81,19 @@ def setHook(data):
         res = requests.get(url,paramsCoin).json()
         print(res[0]["price"],str(datetime.now()),"loaded")
         cryptoCoins.append({"id":data["coinId"],"hookPrice":res[0]["price"],"hookDateTime":str(datetime.now()),"maxPrice":res[0]["price"]})
-
+    #global params
+    flag = 0
     params["ids"] = ""
     for coin in cryptoCoins:
            if params["ids"] == "":
                params["ids"] = coin["id"]
+               flag = 1
            else:
                params["ids"] += "," + coin["id"]
     print(params,cryptoCoins)   
-    saveInFirebase(data["userId"],cryptoCoins)    
+    saveInFirebase(data["userId"],cryptoCoins) 
+    if flag == 1 and data["track"]:
+        asyncio.run(tracker())
     return  
     #response = requests.get(url,params)
     #print("\n\n response\n",response.json()) 
