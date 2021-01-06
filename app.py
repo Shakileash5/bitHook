@@ -65,14 +65,19 @@ async def tracker():
                     coin["count"] += 1
                     coin["curve"].append(tempPercent)
                     if coin["count"] == 3:
-                        one,two,three = 0,0,0
-                        one = coin["curve"].pop()
-                        two = coin["curve"].pop()
-                        three = coin["curve"].pop()
-                        temp = 0
-                        temp = (one + two + three)/3
+                        #one,two,three = 0,0,0
+                        #number = []
+                        sum1 = 0
+                        for k in range(3):
+                           sum1 += coin["curve"].pop()
+                        sum1 = sum1/3
+                        #one = coin["curve"].pop()
+                        #two = coin["curve"].pop()
+                        #three = coin["curve"].pop()
+                        #temp = 0
+                        #temp = (one + two + three)/3
                         coin["count"] = 0
-                        coin["curve"].append(temp)
+                        coin["curve"].append(sum1)
                         coin["completeCurve"] += 1
                         print("completecurve",coin["completeCurve"])
                         if coin["completeCurve"] > coin["highCurve"]:
@@ -95,6 +100,7 @@ async def tracker():
 def setHook(data):
     flag = 0
     print(data,cryptoCoins)
+    
     for i in range(len(cryptoCoins)):
         if cryptoCoins[i]["id"] == data["coinId"]:
             flag = 1
