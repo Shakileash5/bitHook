@@ -33,7 +33,7 @@ trackerRunning = 0
 
 tempPercent = 0
 coinDirection = 0
-trackPeriod = 60
+trackPeriod = 5
 curveLength = {}
 
 app = Flask(__name__)
@@ -106,7 +106,11 @@ async def tracker():
                 for coin in user["coinData"]:
                     res = requests.get(url,paramsUser[count]).json()
                     for i in res:
-                        print(i["price"]," id ::",i["id"],params["ids"])
+                        print(i["price"]," id ::",i["id"],params["ids"],coin,"ui")
+                        try:
+                            coin["curve"] = coin["curve"]
+                        except:
+                            coin["curve"] = []
                         if coin["id"] == i["id"]:
                             if float(coin["maxPrice"]) < float(i["price"]):
                                 coin["maxPrice"] = i["price"]
@@ -143,7 +147,7 @@ async def tracker():
                             print(tempPercent,"percent ",coinDirection,"\n","curve",coin["curve"])    
                 count+=1                  
         except Exception as e:
-            print("some Error dont worry!!",e.message)
+            print("some Error dont worry!!",e)
 
 
 def setHook(data):
