@@ -28,7 +28,7 @@ db = firebase.database()
 
 res = requests.get(url,params)
 cryptoCoins = []
-
+trackerRunning = 0
 
 app = Flask(__name__)
 CORS(app)
@@ -41,11 +41,13 @@ def saveInFirebase(id,data):
     return
 
 async def tracker():
+    trackerRunning = 1
     while True:
         
         print("tracker running")
         if params["ids"] == "":
             print("tracker stopped")
+            trackerRunning = 0
             break
         
         time.sleep(5)
@@ -57,14 +59,38 @@ async def tracker():
                 if coin["id"] == i["id"]:
                     if float(coin["maxPrice"]) < float(i["price"]):
                         coin["maxPrice"] = i["price"]
+                        coin["highCurve"] = coin["completeCurve"] + 1
+                    
+                    tempPercent = (float(i["price"])*100)/float(coin["hookPrice"])
+                    coin["count"] += 1
+                    coin["curve"].append(tempPercent)
+                    if coin["count"] == 3:
+                        one,two,three = 0,0,0
+                        one = coin["curve"].pop()
+                        two = coin["curve"].pop()
+                        three = coin["curve"].pop()
+                        temp = 0
+                        temp = (one + two + three)/3
+                        coin["count"] = 0
+                        coin["curve"].append(temp)
+                        coin["completeCurve"] += 1
+                        print("completecurve",coin["completeCurve"])
+                        if coin["completeCurve"] > coin["highCurve"]:
+                            print("past limits")
+                            if coin["completeCurve"] > 3:
+                                print(coin["curve"][-2],"here")
+                                if coin["curve"][coin["highCurve"]] > coin["curve"][-2] and coin["curve"][-2] > coin["curve"][-1]:
+                                    print("Pricing falling please sell the coin!!") 
+
                     tempPercent = (float(i["price"])*100)/float(coin["maxPrice"])
+
                     if tempPercent >= 100:
                         tempPercent -= 100
                         coinDirection = 1
                     else :
                         tempPercent = 100 - tempPercent
 
-                    print(tempPercent,"percent ",coinDirection,"\n")
+                    print(tempPercent,"percent ",coinDirection,"\n","curve",coin["curve"])
 
 def setHook(data):
     flag = 0
@@ -80,7 +106,7 @@ def setHook(data):
         paramsCoin["ids"] = str(data["coinId"])
         res = requests.get(url,paramsCoin).json()
         print(res[0]["price"],str(datetime.now()),"loaded")
-        cryptoCoins.append({"id":data["coinId"],"hookPrice":res[0]["price"],"hookDateTime":str(datetime.now()),"maxPrice":res[0]["price"]})
+        cryptoCoins.append({"id":data["coinId"],"hookPrice":res[0]["price"],"hookDateTime":str(datetime.now()),"maxPrice":res[0]["price"],"count":0,"curve":[],"completeCurve":0,"highCurve":0})
     #global params
     flag = 0
     params["ids"] = ""
@@ -90,10 +116,13 @@ def setHook(data):
                flag = 1
            else:
                params["ids"] += "," + coin["id"]
+               if trackerRunning == 0:
+                   asyncio.run(tracker())
     print(params,cryptoCoins)   
     saveInFirebase(data["userId"],cryptoCoins) 
     if flag == 1 and data["track"]:
-        asyncio.run(tracker())
+        if trackerRunning == 0:
+            asyncio.run(tracker())
     return  
     #response = requests.get(url,params)
     #print("\n\n response\n",response.json()) 
