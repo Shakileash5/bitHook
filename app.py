@@ -16,6 +16,7 @@ params = {
     "per-page" : 100,
     "page" : 1,
 }
+paramsUser = []
 config = {
   "apiKey": "AIzaSyBREDzu1TkZWu3L1LBnIJnanDIUsSKlvTs",
   "authDomain": "bithook-default-rtdb.firebaseio.com/",
@@ -26,15 +27,61 @@ config = {
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 
-res = requests.get(url,params)
+#res = requests.get(url,params)
 cryptoCoins = []
 trackerRunning = 0
+
+tempPercent = 0
+coinDirection = 0
+trackPeriod = 60
+curveLength = {}
 
 app = Flask(__name__)
 CORS(app)
 
-tempPercent = 0
-coinDirection = 0
+def getUserDetails(id):
+    try:
+        details = dict(db.child("User").child(str(id)).get().val())
+        return details
+    except:
+        print("no such id")
+
+def fetchFirebaseData():
+    try:
+        res = db.child("CoinData").get()
+        keys = list(dict(res.val()).keys())
+        val = dict(res.val())
+        print(val)
+        for user in keys:
+            print(user)
+            details = getUserDetails(user)
+            mail = details["mail"]
+            
+            cryptoCoins.append({"userId":str(user),"mail":mail,"coinData":val[str(user)]})
+            trackPeriod = details["trackPeriod"]
+            
+            curveLength[str(user)] = details["curveLength"]
+            print("works",str(user))
+            details = db.child("CoinData").child(str(user)).get().val()
+            print(details,"userCoin")
+            params["ids"] = ""
+            print(cryptoCoins,"\n\n",cryptoCoins[0])
+            paramsUser.append(params)
+            for coin in details:
+                if paramsUser[len(paramsUser)-1]["ids"] == "":
+                    paramsUser[len(paramsUser)-1]["ids"] = coin["id"]
+                        
+                else:
+                    paramsUser[len(paramsUser)-1]["ids"] += "," + coin["id"]
+                    if trackerRunning == 0:
+                        asyncio.run(tracker())
+            print(paramsUser,cryptoCoins)
+        print("outOfloop")
+        asyncio.run(tracker())
+    except Exception as e:
+        print("someError",e)
+    print(cryptoCoins,"val")
+    return
 
 def saveInFirebase(id,data):
     db.child("CoinData").child(str(id)).set(data)
@@ -50,82 +97,96 @@ async def tracker():
             trackerRunning = 0
             break
         
-        time.sleep(5)
-        res = requests.get(url,params).json()
+        time.sleep(trackPeriod)
+        
         global coinDirection
-        for i in res:
-            print(i["price"]," id ::",i["id"],params["ids"])
-            for coin in cryptoCoins:
-                if coin["id"] == i["id"]:
-                    if float(coin["maxPrice"]) < float(i["price"]):
-                        coin["maxPrice"] = i["price"]
-                        coin["highCurve"] = coin["completeCurve"] + 1
-                    
-                    tempPercent = (float(i["price"])*100)/float(coin["hookPrice"])
-                    coin["count"] += 1
-                    coin["curve"].append(tempPercent)
-                    if coin["count"] == 3:
-                        #one,two,three = 0,0,0
-                        #number = []
-                        sum1 = 0
-                        for k in range(3):
-                           sum1 += coin["curve"].pop()
-                        sum1 = sum1/3
-                        #one = coin["curve"].pop()
-                        #two = coin["curve"].pop()
-                        #three = coin["curve"].pop()
-                        #temp = 0
-                        #temp = (one + two + three)/3
-                        coin["count"] = 0
-                        coin["curve"].append(sum1)
-                        coin["completeCurve"] += 1
-                        print("completecurve",coin["completeCurve"])
-                        if coin["completeCurve"] > coin["highCurve"]:
-                            print("past limits")
-                            if coin["completeCurve"] > 3:
-                                print(coin["curve"][-2],"here")
-                                if coin["curve"][coin["highCurve"]] > coin["curve"][-2] and coin["curve"][-2] > coin["curve"][-1]:
-                                    print("Pricing falling please sell the coin!!") 
+        try:    
+            count = 0 
+            for user in cryptoCoins:
+                for coin in user["coinData"]:
+                    res = requests.get(url,paramsUser[count]).json()
+                    for i in res:
+                        print(i["price"]," id ::",i["id"],params["ids"])
+                        if coin["id"] == i["id"]:
+                            if float(coin["maxPrice"]) < float(i["price"]):
+                                coin["maxPrice"] = i["price"]
+                                coin["highCurve"] = coin["completeCurve"] + 1
+                            
+                            tempPercent = (float(i["price"])*100)/float(coin["hookPrice"])
+                            coin["count"] += 1
+                            coin["curve"].append(tempPercent)
+                            if coin["count"] == curveLength[str(user["userId"])]:
+                                sum1 = 0
+                                for k in range(curveLength[str(user["userId"])]):
+                                    sum1 += coin["curve"].pop()
+                                sum1 = sum1/curveLength[str(user["userId"])]
+                                coin["count"] = 0
+                                coin["curve"].append(sum1)
+                                coin["completeCurve"] += 1
+                                print("completecurve",coin["completeCurve"])
+                                if coin["completeCurve"] > coin["highCurve"]:
+                                    print("past limits")
+                                    if coin["completeCurve"] > 3:
+                                        print(coin["curve"][-2],"here")
+                                        if coin["curve"][coin["highCurve"]] > coin["curve"][-2] and coin["curve"][-2] > coin["curve"][-1]:
+                                            print("Pricing falling please sell the coin!!") 
 
-                    tempPercent = (float(i["price"])*100)/float(coin["maxPrice"])
+                            tempPercent = (float(i["price"])*100)/float(coin["maxPrice"])
 
-                    if tempPercent >= 100:
-                        tempPercent -= 100
-                        coinDirection = 1
-                    else :
-                        tempPercent = 100 - tempPercent
+                            if tempPercent >= 100:
+                                tempPercent -= 100
+                                coinDirection = 1
+                            else :
+                                tempPercent = 100 - tempPercent
 
-                    print(tempPercent,"percent ",coinDirection,"\n","curve",coin["curve"])
+                            saveInFirebase(user["userId"],user["coinData"]) 
+                            print(tempPercent,"percent ",coinDirection,"\n","curve",coin["curve"])    
+                count+=1                  
+        except Exception as e:
+            print("some Error dont worry!!",e.message)
+
 
 def setHook(data):
     flag = 0
+    flagUser = -1
     print(data,cryptoCoins)
-    
-    for i in range(len(cryptoCoins)):
-        if cryptoCoins[i]["id"] == data["coinId"]:
-            flag = 1
-            if data["track"] == False:
-                del cryptoCoins[i]
-    
+    for j in range(len(cryptoCoins)):
+        if cryptoCoins[j]["userId"] == data["userId"]:
+            flagUser = j
+            for i in range(len(cryptoCoins[j]["coinData"])):
+                if cryptoCoins[j]["coinData"][i]["id"] == data["coinId"]:
+                    flag = 1
+                    if data["track"] == False:
+                        del cryptoCoins[j]["coinData"][i]
+        
     if flag == 0:
+        if flagUser == -1:
+            mail = getUserDetails(str(data["userId"]))["mail"]
+            cryptoCoins.append({"userId":str(data["userId"]),"mail":mail,"coinData":[]})
+            paramsUser.append(params)
+            flagUser = len(cryptoCoins) - 1
         paramsCoin = params
         paramsCoin["ids"] = str(data["coinId"])
         res = requests.get(url,paramsCoin).json()
         print(res[0]["price"],str(datetime.now()),"loaded")
-        cryptoCoins.append({"id":data["coinId"],"hookPrice":res[0]["price"],"hookDateTime":str(datetime.now()),"maxPrice":res[0]["price"],"count":0,"curve":[],"completeCurve":0,"highCurve":0})
+        
+        cryptoCoins[flagUser]["coinData"].append({"id":data["coinId"],"hookPrice":res[0]["price"],"hookDateTime":str(datetime.now()),"maxPrice":res[0]["price"],"count":0,"curve":[],"completeCurve":0,"highCurve":0})
     #global params
     flag = 0
     params["ids"] = ""
-    for coin in cryptoCoins:
-           if params["ids"] == "":
-               params["ids"] = coin["id"]
+    paramsUser[flagUser] = params
+    print(cryptoCoins,"\n\n",cryptoCoins[0])
+    for coin in cryptoCoins[flagUser]["coinData"]:
+
+           if paramsUser[flagUser]["ids"] == "":
+               paramsUser[flagUser]["ids"] = coin["id"]
                flag = 1
            else:
-               params["ids"] += "," + coin["id"]
+               paramsUser[flagUser]["ids"] += "," + coin["id"]
                if trackerRunning == 0:
                    asyncio.run(tracker())
-    print(params,cryptoCoins)   
-    saveInFirebase(data["userId"],cryptoCoins) 
+    print(paramsUser[flagUser],cryptoCoins)   
+    saveInFirebase(data["userId"],cryptoCoins[flagUser]["coinData"]) 
     if flag == 1 and data["track"]:
         if trackerRunning == 0:
             asyncio.run(tracker())
@@ -167,5 +228,35 @@ def stream():
             yield 'data: {}\n\n'.format(get_message())
     return Response(eventStream(), mimetype="text/event-stream")
 
+@app.route("/changeCurveLength",methods=["GET","POST"])
+def changeCurveLength():
+    if request.method == "POST":
+        data = json.loads(request.data)
+        print("data",data)
+        if int(data["curveLength"])!=0:
+            curveLength[str(data["userId"])] = int(data["curveLength"])
+            return jsonify({'status':str(200)})
+        else:
+            return jsonify({'status':str(400)})    
+    else:
+        return jsonify({'status':str(400)}) 
+
+@app.route("/changeTrackPeriod",methods=["GET","POST"])
+def changeTrackPeriod():
+    if request.method == "POST":
+        data = json.loads(request.data)
+        print("data",data)
+        if int(data["trackPeriod"])!=0:
+            trackPeriod = int(data["trackPeriod"])
+            return jsonify({'status':str(200)})
+        else:
+            return jsonify({'status':str(400)})    
+    else:
+        return jsonify({'status':str(400)}) 
+
+
+
+
 if __name__ == "__main__":
+    fetchFirebaseData() 
     app.run(port=5000,debug=True)    
