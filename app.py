@@ -8,6 +8,7 @@ from datetime import datetime
 import pyrebase
 
 key = "9924d3911cf21a14cac79595f1a1b33e"
+alternateKey = "c36717396ec409c55b99f59637c4fb5b"
 url = "https://api.nomics.com/v1/currencies/ticker" #?key="+key+"&interval=1h,1d&convert=INR&per-page=100&page=1"
 params = {
     "key":key,
@@ -73,11 +74,11 @@ def fetchFirebaseData():
                         
                 else:
                     paramsUser[len(paramsUser)-1]["ids"] += "," + coin["id"]
-                    if trackerRunning == 0:
-                        asyncio.run(tracker())
+                    #if trackerRunning == 0:
+                        #asyncio.run(tracker())
             print(paramsUser,cryptoCoins)
         print("outOfloop")
-        asyncio.run(tracker())
+        #asyncio.run(tracker())
     except Exception as e:
         print("someError",e)
     print(cryptoCoins,"val")
@@ -87,17 +88,43 @@ def saveInFirebase(id,data):
     db.child("CoinData").child(str(id)).set(data)
     return
 
+def hookHistoryFirebase(id,data,state):
+    
+    try:
+        hookHistory = db.child("User").child(str(id)).child("hookHistory").get().val()
+    except:
+        hookHistory = []
+    print("what is hook",hookHistory)
+    if hookHistory == None:
+        hookHistory = []
+    if state == 1:
+        fakeParams = params
+        fakeParams["ids"] = str(data["id"])
+        res = requests.get(url,fakeParams)
+        hookHistory.append({"id":data["id"],"hookPrice":res[0]["price"],"hookDateTime":data["hookDateTime"],"maxPrice":data["maxPrice"],"type":"unHooked"})
+    else:
+        hookHistory.append({"id":data["id"],"hookPrice":data["hookPrice"],"hookDateTime":data["hookDateTime"],"type":"Hooked"})
+    try:
+        db.child("User").child(str(id)).child("hookHistory").set(hookHistory)
+        print("Hooked sucessfully")
+    except Exception as e:
+        print("error in saving history",e)
+
 async def tracker():
     trackerRunning = 1
     while True:
         
         print("tracker running")
-        if params["ids"] == "":
-            print("tracker stopped")
-            trackerRunning = 0
+        count = 0
+
+        for user in cryptoCoins:
+            if paramsUser[count]["ids"] == "":
+                print("tracker stopped")
+                trackerRunning = 0
+            count+=1
+        if trackerRunning == 0:
             break
-        
-        time.sleep(trackPeriod)
+        await asyncio.sleep(trackPeriod)
         
         global coinDirection
         try:    
@@ -106,7 +133,7 @@ async def tracker():
                 for coin in user["coinData"]:
                     res = requests.get(url,paramsUser[count]).json()
                     for i in res:
-                        print(i["price"]," id ::",i["id"],params["ids"],coin,"ui")
+                        print(i["price"]," id ::",i["id"],params["ids"],"ui")
                         try:
                             coin["curve"] = coin["curve"]
                         except:
@@ -161,6 +188,7 @@ def setHook(data):
                 if cryptoCoins[j]["coinData"][i]["id"] == data["coinId"]:
                     flag = 1
                     if data["track"] == False:
+                        hookHistoryFirebase(data["userId"],cryptoCoins[j]["coinData"][i],1)
                         del cryptoCoins[j]["coinData"][i]
         
     if flag == 0:
@@ -175,6 +203,8 @@ def setHook(data):
         print(res[0]["price"],str(datetime.now()),"loaded")
         
         cryptoCoins[flagUser]["coinData"].append({"id":data["coinId"],"hookPrice":res[0]["price"],"hookDateTime":str(datetime.now()),"maxPrice":res[0]["price"],"count":0,"curve":[],"completeCurve":0,"highCurve":0})
+        hookHistoryFirebase(data["userId"],cryptoCoins[flagUser]["coinData"][-1],0)
+
     #global params
     flag = 0
     params["ids"] = ""
