@@ -6,6 +6,7 @@ import time
 import asyncio
 from datetime import datetime
 import pyrebase
+from mail import send_mail
 
 key = "9924d3911cf21a14cac79595f1a1b33e"
 alternateKey = "c36717396ec409c55b99f59637c4fb5b"
@@ -75,7 +76,7 @@ def fetchFirebaseData():
                 else:
                     paramsUser[len(paramsUser)-1]["ids"] += "," + coin["id"]
                     #if trackerRunning == 0:
-                        #asyncio.run(tracker())
+                      #  asyncio.run(tracker())
             print(paramsUser,cryptoCoins)
         print("outOfloop")
         #asyncio.run(tracker())
@@ -91,7 +92,7 @@ def saveInFirebase(id,data):
 def hookHistoryFirebase(id,data,state):
     
     try:
-        hookHistory = db.child("User").child(str(id)).child("hookHistory").get().val()
+        hookHistory = list(db.child("User").child(str(id)).child("hookHistory").get().val())
     except:
         hookHistory = []
     print("what is hook",hookHistory)
@@ -100,7 +101,8 @@ def hookHistoryFirebase(id,data,state):
     if state == 1:
         fakeParams = params
         fakeParams["ids"] = str(data["id"])
-        res = requests.get(url,fakeParams)
+        res = requests.get(url,fakeParams).json()
+        print(res)
         hookHistory.append({"id":data["id"],"hookPrice":res[0]["price"],"hookDateTime":data["hookDateTime"],"maxPrice":data["maxPrice"],"type":"unHooked"})
     else:
         hookHistory.append({"id":data["id"],"hookPrice":data["hookPrice"],"hookDateTime":data["hookDateTime"],"type":"Hooked"})
@@ -161,6 +163,8 @@ async def tracker():
                                         print(coin["curve"][-2],"here")
                                         if coin["curve"][coin["highCurve"]] > coin["curve"][-2] and coin["curve"][-2] > coin["curve"][-1]:
                                             print("Pricing falling please sell the coin!!") 
+                                            mail = getUserDetails(str(user["userId"]))["mail"]
+                                            send_mail(mail,coin["id"])
 
                             tempPercent = (float(i["price"])*100)/float(coin["maxPrice"])
 
