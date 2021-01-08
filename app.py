@@ -23,11 +23,11 @@ params = {
 }
 paramsUser = []
 config = {
-  "apiKey": "AIzaSyBREDzu1TkZWu3L1LBnIJnanDIUsSKlvTs",
-  "authDomain": "bithook-default-rtdb.firebaseio.com/",
-  "databaseURL": "https://bithook-default-rtdb.firebaseio.com/",
+  "apiKey": "apiKey",
+  "authDomain": "appName.firebaseio.com/",
+  "databaseURL": "https://appName.firebaseio.com/",
   "projectId": "bithook",
-  "storageBucket": "https://bithook.appspot.com/",
+  "storageBucket": "https://appName.appspot.com/",
 }
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
