@@ -38,7 +38,7 @@ trackerRunning = 0
 
 tempPercent = 0
 coinDirection = 0
-trackPeriod = 5
+trackPeriod = 60
 curveLength = {}
 
 app = Flask(__name__)
