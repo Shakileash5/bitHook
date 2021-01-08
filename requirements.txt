@@ -4,6 +4,7 @@ click==7.1.2
 cycler==0.10.0
 decorator==4.4.2
 Flask==1.1.2
+Flask-Cors==3.0.9
 gcloud==0.18.3
 googleapis-common-protos==1.52.0
 httplib2==0.18.1
