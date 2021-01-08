@@ -1,12 +1,15 @@
-import requests
-import json
-from flask import Flask,render_template,Response,jsonify,request
-from flask_cors import CORS
+import os
+import sys
 import time
+import json
 import asyncio
-from datetime import datetime
 import pyrebase
+import requests
 from mail import send_mail
+from flask_cors import CORS
+from datetime import datetime
+from flask import Flask,render_template,Response,jsonify,request
+
 
 key = "9924d3911cf21a14cac79595f1a1b33e"
 alternateKey = "c36717396ec409c55b99f59637c4fb5b"
@@ -297,4 +300,4 @@ def changeTrackPeriod():
 
 if __name__ == "__main__":
     fetchFirebaseData() 
-    app.run(port=5000,debug=True)    
+    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)),debug=True,use_reloader=True)    
