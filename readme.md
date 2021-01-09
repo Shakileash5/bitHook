@@ -15,7 +15,7 @@ Make sure you have knowledge about python,pip and Flask.
    $ git clone https://github.com/Shakileash5/bitHook.git
 ```
 ```sh
-   $ cd Food_security
+   $ cd bitHook
 ```
 * Create virtualenv
 ```sh
