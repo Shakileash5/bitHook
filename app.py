@@ -225,16 +225,16 @@ def setHook(data):
            else:
                paramsUser[flagUser]["ids"] += "," + coin["id"]
                if trackerRunning == 0:
-                   #asyncio.run(tracker())
-                   loop = asyncio.get_event_loop()
-                   loop.run_until_complete(tracker())
+                   asyncio.run(tracker())
+                   #loop = asyncio.get_event_loop()
+                   #loop.run_until_complete(tracker())
     print(paramsUser[flagUser],cryptoCoins)   
     saveInFirebase(data["userId"],cryptoCoins[flagUser]["coinData"]) 
     if flag == 1 and data["track"]:
         if trackerRunning == 0:
-            #asyncio.run(tracker())
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(tracker())
+            asyncio.run(tracker())
+            #loop = asyncio.get_event_loop()
+            #loop.run_until_complete(tracker())
     return  
     #response = requests.get(url,params)
     #print("\n\n response\n",response.json()) 
