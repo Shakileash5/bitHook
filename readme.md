@@ -12,7 +12,7 @@ Make sure you have knowledge about python,pip and Flask.
 
 * Clone the repo
 ```sh
-   $ git clone https://github.com/Shakileash5/bithookApp.git
+   $ git clone https://github.com/Shakileash5/bitHook.git
 ```
 ```sh
    $ cd Food_security
