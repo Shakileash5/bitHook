@@ -23,11 +23,11 @@ params = {
 }
 paramsUser = []
 config = {
-  "apiKey": "apiKey",
-  "authDomain": "appName.firebaseio.com/",
-  "databaseURL": "https://appName.firebaseio.com/",
+  "apiKey": "AIzaSyBREDzu1TkZWu3L1LBnIJnanDIUsSKlvTs",
+  "authDomain": "bithook-default-rtdb.firebaseio.com/",
+  "databaseURL": "https://bithook-default-rtdb.firebaseio.com/",
   "projectId": "bithook",
-  "storageBucket": "https://appName.appspot.com/",
+  "storageBucket": "https://bithook.appspot.com/",
 }
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
@@ -225,7 +225,9 @@ def setHook(data):
            else:
                paramsUser[flagUser]["ids"] += "," + coin["id"]
                if trackerRunning == 0:
-                   asyncio.run(tracker())
+                   #asyncio.run(tracker())
+                   loop = asyncio.get_event_loop()
+                   loop.run_until_complete(tracker())
     print(paramsUser[flagUser],cryptoCoins)   
     saveInFirebase(data["userId"],cryptoCoins[flagUser]["coinData"]) 
     if flag == 1 and data["track"]:
@@ -281,6 +283,11 @@ def changeCurveLength():
             return jsonify({'status':str(400)})    
     else:
         return jsonify({'status':str(400)}) 
+
+@app.route("/stopTracker")
+def stopTracker():
+    trackerRunning = 0
+    return jsonify({'status':str(200)})
 
 @app.route("/changeTrackPeriod",methods=["GET","POST"])
 def changeTrackPeriod():

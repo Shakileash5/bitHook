@@ -4,7 +4,7 @@ port = 465  # For SSL
 smtp_server = "smtp.gmail.com"
 sender_email = "shakileash2000@gmail.com"  # Enter your address
 receiver_email = "sirenatechnology@gmail.com"  # Enter receiver address
-password = "google app password"
+password = "vvnurinqqtagonij"
 message = """\
 Subject: Crypto Coin alert
 
