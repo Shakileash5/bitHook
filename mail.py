@@ -2,9 +2,9 @@ import smtplib, ssl
 
 port = 465  # For SSL
 smtp_server = "smtp.gmail.com"
-sender_email = "shakileash2000@gmail.com"  # Enter your address
-receiver_email = "sirenatechnology@gmail.com"  # Enter receiver address
-password = "vvnurinqqtagonij"
+sender_email = ""  # Enter your address
+receiver_email = ""  # Enter receiver address
+password = ""
 message = """\
 Subject: Crypto Coin alert
 
@@ -23,4 +23,3 @@ def send_mail(reciever_mail,msg):
         server.login(sender_email, password)
         server.sendmail(sender_email, reciever_mail, message)
 
-#send_mail("shakileash2000@gmail.com","BTC")
